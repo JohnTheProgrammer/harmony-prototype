@@ -1,0 +1,15 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/computer/Code/harmony/backend/build/cmake_install.cmake",
+		"/home/computer/Code/harmony/backend/build/_deps/datachannel-build/cmake_install.cmake",
+		"/home/computer/Code/harmony/backend/build/_deps/datachannel-build/deps/plog/cmake_install.cmake",
+		"/home/computer/Code/harmony/backend/build/_deps/datachannel-build/deps/usrsctp/cmake_install.cmake",
+		"/home/computer/Code/harmony/backend/build/_deps/datachannel-build/deps/usrsctp/usrsctplib/cmake_install.cmake",
+		"/home/computer/Code/harmony/backend/build/_deps/datachannel-build/deps/libsrtp/cmake_install.cmake",
+		"/home/computer/Code/harmony/backend/build/_deps/datachannel-build/deps/libjuice/cmake_install.cmake",
+		"/home/computer/Code/harmony/backend/build/_deps/json-build/cmake_install.cmake",
+		"/home/computer/Code/harmony/backend/build/_deps/stduuid-build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

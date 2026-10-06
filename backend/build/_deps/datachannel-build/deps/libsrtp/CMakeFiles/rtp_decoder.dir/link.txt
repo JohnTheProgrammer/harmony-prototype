@@ -1,0 +1,1 @@
+/usr/bin/cc -Wl,--dependency-file=CMakeFiles/rtp_decoder.dir/link.d CMakeFiles/rtp_decoder.dir/test/rtp_decoder.c.o CMakeFiles/rtp_decoder.dir/test/getopt_s.c.o CMakeFiles/rtp_decoder.dir/test/util.c.o -o rtp_decoder  libsrtp2.a -lpcap /usr/lib/libcrypto.so

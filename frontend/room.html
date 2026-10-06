@@ -1,0 +1,437 @@
+<html>
+  <head>
+    <title>Harmony - Room</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./room.css" />
+  </head>
+  <body>
+    <div id="roomContainer">
+      <div class="join-room-container">
+        <div class="username-container">
+          <h2 class="username-header">Choose a name</h2>
+          <p class="username-subtext">Pick a display name for this room.</p>
+
+          <input
+            id="username"
+            type="text"
+            class="username-input"
+            placeholder="Your name..."
+            oninput="onUsernameChange()"
+            autofocus
+          />
+
+          <button
+            id="enterButton"
+            class="btn primary large"
+            style="width: 100%"
+            onclick="enterRoom()"
+            disabled
+          >
+            Enter Room
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <template id="roomTemplate">
+      <div style="height: 100vh; display: flex; flex-direction: column">
+        <header
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #3d404c;
+            padding: 16px;
+            border-bottom: solid 1px #535665;
+          "
+        >
+          <div>
+            <div style="display: flex; gap: 8px; align-items: center">
+              <span style="font-size: 1rem; font-weight: bold">harmony</span>
+              <span>|</span>
+              <button
+                id="roomIdButton"
+                style="
+                  font-family: monospace;
+                  font-size: 0.95rem;
+                  background-color: transparent;
+                  border: none;
+                  color: white;
+                  padding: 0;
+                  cursor: pointer;
+                "
+              >
+                roomid
+              </button>
+            </div>
+          </div>
+          <div>
+            <button class="btn secondary small" style="margin-right: 8px">
+              Admin
+            </button>
+            <a href="/">
+              <button class="btn negative small">Leave</button>
+            </a>
+          </div>
+        </header>
+        <div style="display: flex; flex: 1">
+          <aside class="side-column">
+            <div style="padding: 16px">
+              <span class="column-header-text"
+                >Members - <span id="memberAmount"></span
+              ></span>
+            </div>
+            <hr />
+            <div style="padding: 16px" id="membersContainer"></div>
+          </aside>
+          <main
+            style="
+              flex: 1;
+              background-color: #333540;
+              display: flex;
+              flex-direction: column;
+              border: solid 1px #535665;
+              overflow-y: auto;
+              min-height: 0;
+            "
+          >
+            <div style="padding: 16px; border-bottom: solid 1px #535665">
+              <span class="column-header-text">Chat</span>
+            </div>
+            <div id="chatMessages" style="flex: 1; padding: 16px">
+              <div>
+                <span class="chat-username">Bob </span>
+                <span class="chat-time">5:18pm</span>
+                <p class="chat-message">Welcome to the room</p>
+              </div>
+            </div>
+            <hr />
+            <div
+              style="
+                display: flex;
+                gap: 4px;
+                padding: 8px;
+                width: 100%;
+                align-items: flex-end;
+              "
+            >
+              <textarea
+                id="chatInput"
+                style="
+                  flex: 1;
+                  font-size: 1.1rem;
+                  resize: none;
+                  field-sizing: content;
+                  width: 0;
+                  overflow-y: auto;
+                  border-radius: 8px;
+                  color: white;
+                  background-color: #64687b;
+                  border: none;
+                  padding: 8px;
+                "
+                placeholder="Type a message..."
+              ></textarea>
+              <button class="btn primary small" onclick="sendChat()">
+                Send
+              </button>
+            </div>
+          </main>
+          <aside class="side-column">
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 16px;
+              "
+            >
+              <span class="column-header-text">Voice</span>
+              <span style="font-size: 0.9rem; font-weight: lighter"
+                >2 in call</span
+              >
+            </div>
+            <hr />
+            <div style="padding: 16px">
+              <div class="voice-member-container">
+                <span>Alice</span>
+              </div>
+              <div class="voice-member-container">
+                <span>Bob</span>
+              </div>
+            </div>
+            <hr />
+            <div style="padding: 16px">
+              <div id="voiceControls" style="display: none">
+                <button style="width: 100%" class="btn medium secondary">
+                  Mute
+                </button>
+                <button style="width: 100%" class="btn medium secondary">
+                  Deafen
+                </button>
+              </div>
+              <button
+                id="toggleVoiceButton"
+                style="width: 100%"
+                class="btn primary large"
+                onclick="toggleVoice()"
+              >
+                Join Voice
+              </button>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </template>
+    <script>
+      let ROOM_ID;
+      let username = "";
+      const JOIN_ROOM_MESSAGE = "join_room";
+      const CHAT_SENT_MESSAGE = "chat_sent";
+      const JOIN_VOICE_MESSAGE = "join_voice";
+      const LEAVE_VOICE_MESSAGE = "leave_voice";
+      const SEND_ICE_MESSAGE = "send_ice";
+
+      const websocket = new WebSocket("ws:localhost:8081");
+
+      const configuration = {
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      };
+      let peerConnection;
+      let audioContext;
+      let micStream;
+      let remoteStream;
+
+      const peerConnectionInitializer = async () => {
+        const newPeerConnection = new RTCPeerConnection(configuration);
+        remoteStream = new MediaStream();
+
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+
+        micStream
+          .getTracks()
+          .forEach((track) => newPeerConnection.addTrack(track, micStream));
+
+        newPeerConnection.addEventListener("icecandidate", (event) => {
+          if (event.candidate) {
+            websocket.send(
+              JSON.stringify({
+                type: SEND_ICE_MESSAGE,
+                "ice-candidate": event.candidate,
+              }),
+            );
+          }
+        });
+
+        newPeerConnection.onconnectionstatechange = () => {
+          updateVoiceButtonUI(newPeerConnection.connectionState);
+        };
+
+        newPeerConnection.ontrack = (event) => {
+          remoteStream.addTrack(event.track);
+
+          dummyAudio = new Audio();
+          dummyAudio.muted = true;
+          dummyAudio.srcObject = remoteStream;
+
+          dummyAudio
+            .play()
+            .catch((err) => console.warn("Dummy audio play failed:", err));
+
+          audioContext = new (window.AudioContext ||
+            window.webkitAudioContext)();
+
+          const mediaStreamSource =
+            audioContext.createMediaStreamSource(remoteStream);
+
+          mediaStreamSource.connect(audioContext.destination);
+        };
+
+        return newPeerConnection;
+      };
+
+      websocket.addEventListener("open", () => {
+        console.log("Web Socket Connected");
+      });
+
+      const updateVoiceButtonUI = (state) => {
+        const btn = document.getElementById("toggleVoiceButton");
+        const voiceControls = document.getElementById("voiceControls");
+
+        switch (state) {
+          case "connecting":
+            btn.disabled = true;
+            btn.innerText = "Connecting...";
+            break;
+          case "connected":
+            voiceControls.style =
+              "display: flex; gap: 8px; padding-bottom: 12px;";
+            btn.disabled = false;
+            btn.innerText = "Leave Voice";
+            btn.className = "btn negative large";
+            break;
+          case "closed":
+          case "disconnected":
+          case "failed":
+            voiceControls.style = "display: none;";
+            btn.disabled = false;
+            btn.innerText = "Join Voice";
+            btn.className = "btn primary large";
+            break;
+        }
+      };
+
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.has("id")) {
+        ROOM_ID = searchParams.get("id");
+      } else {
+        window.location.href = `/home.html`;
+      }
+
+      const onUsernameChange = () => {
+        username = document.getElementById("username").value;
+        document.getElementById("enterButton").disabled = username === "";
+      };
+
+      const deriveUserStatus = (connectionsObj) => {
+        if (connectionsObj.audio) {
+          return "In Voice";
+        }
+
+        return "In Room";
+      };
+
+      const initWebSocketListeners = () => {
+        websocket.addEventListener("message", async (e) => {
+          const data = JSON.parse(e.data);
+          console.log(data);
+
+          if (data.type === "room_update") {
+            const memberHtml = `
+              <div class="member-container">
+              </div>
+            `;
+            document.getElementById("memberAmount").innerText = Object.keys(
+              data.users,
+            ).length;
+
+            const memberNodes = Object.entries(data.users).map(([id, user]) => {
+              const memberNode = document.createElement("div");
+              memberNode.id = `member-${id}`;
+              memberNode.className = "member-container";
+              memberNode.innerHTML = `
+                <span class="member-username">${user.username}</span>
+                <span class="member-status">${deriveUserStatus(user.connections)}</span>
+              `;
+
+              return memberNode;
+            });
+
+            document
+              .getElementById("membersContainer")
+              .replaceChildren(...memberNodes);
+          }
+
+          if (data.type === "user_update") {
+            const memberNode = document.getElementById(
+              `member-${data.user.id}`,
+            );
+            memberNode.innerHTML = `
+                <span class="member-username">${data.user.username}</span>
+                <span class="member-status">${deriveUserStatus(data.user.connections)}</span>
+              `;
+          }
+
+          if (data.type === "chat_received") {
+            const chatNode = document.createElement("div");
+            chatNode.innerHTML = `
+                <span class="chat-username">${data.username}</span>
+                <span class="chat-time">${new Date().toLocaleString()}</span>
+                <p class="chat-message">${data.chat}</p>
+              `;
+
+            document.getElementById("chatMessages").appendChild(chatNode);
+          }
+
+          if (data.type === "answer") {
+            const remoteDesc = new RTCSessionDescription({
+              type: "answer",
+              sdp: data.answer,
+            });
+            await peerConnection.setRemoteDescription(remoteDesc);
+          }
+
+          if (data.type === "receive_ice") {
+            try {
+              await peerConnection.addIceCandidate(data.iceCandidate);
+            } catch (e) {
+              console.error("Error adding received ice candidate", e);
+            }
+          }
+        });
+      };
+
+      const sendChat = () => {
+        websocket.send(
+          JSON.stringify({
+            type: CHAT_SENT_MESSAGE,
+            roomId: ROOM_ID,
+            username,
+            chat: document.getElementById("chatInput").value,
+          }),
+        );
+        document.getElementById("chatInput").value = "";
+      };
+
+      const enterRoom = async () => {
+        const roomTemplate = document.getElementById("roomTemplate");
+
+        const clone = roomTemplate.content.cloneNode(true);
+        clone.getElementById("roomIdButton").append(ROOM_ID);
+
+        const roomContainer = document.getElementById("roomContainer");
+        roomContainer.replaceChildren(clone);
+
+        initWebSocketListeners();
+
+        websocket.send(
+          JSON.stringify({
+            type: JOIN_ROOM_MESSAGE,
+            roomId: ROOM_ID,
+            username,
+          }),
+        );
+      };
+
+      const toggleVoice = async () => {
+        if (!peerConnection) {
+          peerConnection = await peerConnectionInitializer();
+          const offer = await peerConnection.createOffer();
+          await peerConnection.setLocalDescription(offer);
+
+          websocket.send(
+            JSON.stringify({
+              type: JOIN_VOICE_MESSAGE,
+              offer,
+            }),
+          );
+        } else {
+          peerConnection.close();
+          micStream.getTracks().forEach((track) => track.stop());
+          audioContext.close();
+          peerConnection = null;
+          micStream = null;
+          audioContext = null;
+          websocket.send(
+            JSON.stringify({
+              type: LEAVE_VOICE_MESSAGE,
+            }),
+          );
+          updateVoiceButtonUI("closed");
+        }
+      };
+    </script>
+  </body>
+</html>

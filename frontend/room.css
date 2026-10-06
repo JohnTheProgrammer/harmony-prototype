@@ -1,0 +1,118 @@
+/* Select Username Styles */
+.join-room-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  padding-bottom: 10vh; /* Optical centering nudge */
+}
+
+.username-container {
+  background-color: #454b58;
+  border-radius: 12px; /* Slightly rounder for a modern look */
+  padding: 40px;
+  width: 100%;
+  max-width: 400px; /* Prevents it from getting too wide on your 2k screen */
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); /* Adds depth */
+}
+
+.username-header {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.username-subtext {
+  color: #a0a4b8;
+  margin-bottom: 24px;
+  font-size: 1rem;
+}
+
+.username-input {
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  color: white;
+  background-color: #333540;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  width: 100%;
+  font-size: 1.1rem;
+  outline: none;
+}
+
+/* Room Styles */
+.member-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 24px;
+}
+
+.member-username {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.member-status {
+  font-size: 0.85rem;
+  color: #a0a4b8;
+}
+
+.chat-username {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-right: 8px;
+  color: #46ffff;
+}
+
+.chat-time {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #a0a4b8;
+}
+
+.chat-message {
+  font-size: 1.05rem;
+  margin-top: 4px;
+  margin-bottom: 24px;
+  line-height: 1.4;
+  color: #e2e8f0;
+}
+
+.column-header-text {
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #d1d5db;
+}
+
+hr {
+  border: solid 1px #535665;
+  margin: 0;
+}
+
+.voice-member-container {
+  background-color: #4f5162;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+}
+
+textarea::placeholder {
+  color: #a0a4b8;
+}
+
+.side-column {
+  background-color: #3a3c46;
+  border: solid 1px #535665;
+  width: 240px;
+  flex-shrink: 0;
+}
+
+/* Select Username Page Styles */

@@ -1,0 +1,112 @@
+<html>
+  <head></head>
+  <body>
+    <h1>Hello World!</h1>
+    <div>
+      <input id="usernameInput" placeholder="username" />
+      <button onclick="setUsername()">Select Username</button>
+    </div>
+
+    <div>
+      <button id="createRoomButtom" onclick="joinRoom(roomIdGenerator())" disabled>Create Room</button>
+    </div>
+
+    <div>
+      <input id="roomCode" placeholder="room code" />
+      <button id="joinRoomButton" onclick="joinRoom(document.getElementById('roomCode').value)" disabled>
+        Join Room
+      </button>
+    </div>
+
+    <div id="roomDiv" style="display: none">
+      <h4>Room</h6>
+      <p id="roomId"></p>
+      <p id="username"></p>
+      <p id="users"></p>
+    </div>
+
+    <div id="chat" >
+      <h4>Chat</h4>
+      <div id="messages"></div>
+      <div>
+        <input id="chatInput" placeholder="Your chat message goes here"/>
+        <button id="sendChatButton" onclick="sendChat()">Send</button>
+      </div>
+    </div>
+  </body>
+  <script>
+    let username;
+    let roomId;
+    const JOIN_ROOM_MESSAGE = "join_room";
+    const CHAT_SENT_MESSAGE = "chat_sent";
+    const roomIdGenerator = () =>
+      Array.from(Array(12), () =>
+        Math.floor(Math.random() * 36).toString(36),
+      ).join("");
+
+    const websocket = new WebSocket("ws:localhost:8081");
+
+    websocket.addEventListener("open", () => {
+      console.log("Connected");
+    });
+
+    websocket.addEventListener("message", (e) => {
+      const data = JSON.parse(e.data);
+      console.log(e, data);
+
+      if (data.type === "room_update") {
+        const roomDiv = document.getElementById("roomDiv");
+        if (roomDiv.style.display === "none") {
+          roomDiv.style.display = "block";
+        }
+
+        roomId = data.roomId;
+        document.getElementById("roomId").textContent = `Room ID: ${roomId}`;
+        document.getElementById("users").textContent =
+          `Users: ${data.users.join(", ")}`;
+      }
+
+      if(data.type ==="chat_received") {
+        document.getElementById("messages").innerHTML += `
+          <div>
+            <p>Username: ${data.username}</p>
+            <p>${data.chat}</p>
+          </div>
+        `;
+      }
+    });
+
+    const setUsername = () => {
+      username = document.getElementById("usernameInput").value;
+      document.getElementById("username").textContent = `Username: ${username}`;
+
+      if(username) {
+        document.getElementById("createRoomButtom").disabled = false;
+        document.getElementById("joinRoomButton").disabled = false;
+      }
+    };
+
+    const joinRoom = (id) => {
+      websocket.send(
+        JSON.stringify({
+          type: JOIN_ROOM_MESSAGE,
+          roomId: id,
+          username,
+        }),
+      );
+    };
+
+    const sendChat = () => {
+      console.log("test");
+      websocket.send(
+        JSON.stringify({
+          type: CHAT_SENT_MESSAGE,
+          roomId: roomId,
+          username,
+          chat: document.getElementById("chatInput").value
+        }),
+      );
+      document.getElementById("chatInput").value = "";
+    }
+  </script>
+</html>
